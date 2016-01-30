@@ -1,0 +1,37 @@
+body {
+	margin: 0;
+	padding: 0;
+}
+
+section {
+	padding: 0px 10px 0 10px;
+}
+
+.items p .right {
+	float: right;
+}
+
+.items ul {
+	padding: 0;
+	list-style: none;
+}
+
+.items ul li {
+	padding: 5px 5px 5px 0;
+	overflow: auto;
+}
+
+.items ul li img {
+	float: left;
+	padding: 18px 10px 0 0;
+}
+
+.items ul li .item-subtitle {
+	padding: 5px;
+	display: block;
+}
+
+.items ul li .item-description {
+	padding: 5px;
+	display: block;
+}
