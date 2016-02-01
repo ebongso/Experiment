@@ -1,36 +1,36 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Twitch Search Stream</title>
-		<link rel="stylesheet" type="text/css" href="css/styles.css">
-	</head>
+  <head>
+    <title>Twitch Search Stream</title>
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
+  </head>
 <body>
-	<section>
-		<h1>Twitch Search Stream</h1>
-	</section>
-	<section>
-		<article class="search">
-			<input id="searchQuery" type="text" placeholder="Search query..." required />
-			<input id="searchBtn" type="submit" value="Search" />
-		</article>
-	</section>
-	<section>
-		<article class="items">
-			<p>
-				<span>Total Results: </span>
-				<span id="totalItems"></span>
+  <section>
+    <h1>Twitch Search Stream</h1>
+  </section>
+  <section>
+    <article class="search">
+      <input id="searchQuery" type="text" placeholder="Search query..." required />
+      <input id="searchBtn" type="submit" value="Search" />
+    </article>
+  </section>
+  <section>
+    <article class="items">
+      <p>
+        <span>Total Results: </span>
+        <span id="totalItems"></span>
 
-				<span class="right">
-					<span id="pageLeftArrow" style="visibility: hidden; cursor: pointer;">&larr;</span>
-					<span id="currentPage"></span>&nbsp;/&nbsp;<span id="totalPage"></span>
-					<span id="pageRightArrow" style="cursor: pointer;">&rarr;</span>
-				</span>
-			</p>
-			<ul id="searchItems">
-			</ul>
-		</article>
-	</section>
+        <span class="right">
+          <span id="pageLeftArrow" style="visibility: hidden; cursor: pointer;">&larr;</span>
+          <span id="currentPage"></span>&nbsp;/&nbsp;<span id="totalPage"></span>
+          <span id="pageRightArrow" style="cursor: pointer;">&rarr;</span>
+        </span>
+      </p>
+      <ul id="searchItems">
+      </ul>
+    </article>
+  </section>
 
-	<script type="text/javascript" src="js/search.js"></script>
+  <script type="text/javascript" src="js/search.js"></script>
 </body>
 </html>

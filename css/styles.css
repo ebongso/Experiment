@@ -1,39 +1,39 @@
 body {
-	margin: 0;
-	padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 section {
-	padding: 0px 10px 0 10px;
+  padding: 0px 10px 0 10px;
 }
 
 .items p .right {
-	float: right;
+  float: right;
 }
 
 .items ul {
-	padding: 0;
-	list-style: none;
+  padding: 0;
+  list-style: none;
 }
 
 .items ul li {
-	padding: 5px 5px 5px 0;
-	overflow: auto;
+  padding: 5px 5px 5px 0;
+  overflow: auto;
 }
 
 .items ul li img {
-	float: left;
-	padding: 18px 10px 0 0;
-	width: 100px;
-	height: 100px;
+  float: left;
+  padding: 18px 10px 0 0;
+  width: 100px;
+  height: 100px;
 }
 
 .items ul li .item-subtitle {
-	padding: 5px;
-	display: block;
+  padding: 5px;
+  display: block;
 }
 
 .items ul li .item-status {
-	padding: 5px;
-	display: block;
+  padding: 5px;
+  display: block;
 }
