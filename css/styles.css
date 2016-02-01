@@ -24,6 +24,8 @@ section {
 .items ul li img {
 	float: left;
 	padding: 18px 10px 0 0;
+	width: 100px;
+	height: 100px;
 }
 
 .items ul li .item-subtitle {
@@ -31,7 +33,7 @@ section {
 	display: block;
 }
 
-.items ul li .item-description {
+.items ul li .item-status {
 	padding: 5px;
 	display: block;
 }
