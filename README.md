@@ -1,1 +1,1 @@
-# ebongso.github.io
+# A simple web app that calls the TWITCH.TV Search Stream endpoint.
