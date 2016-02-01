@@ -1,24 +1,21 @@
 "use strict"
 const TWITCHAPISEARCHSTREAMURL = 'https://api.twitch.tv/kraken/search/streams';
 var currentState = { "q": "", "page": 0, "limit": 5, "totalPage": 0 }
-var onload = false;
 
 //After the page is reload, check if there's querystring in the URL
 if(window.location.search) {
-	onload = true;
 	refresh();
 }
 
 //Reload the page when the back/forward button is pressed
 window.onpopstate = function(event) {
-	onload = true;
 	refresh();
 };
 
 function refresh() {	
 	updateState(window.location.search.slice(1), 0);
 	document.getElementById('searchQuery').value = unescape(currentState.q);
-	search(currentState.q, currentState.page, currentState.limit);
+	makeSearchRequest(currentState.q, currentState.page, currentState.limit);
 }
 
 document.getElementById('searchBtn').onclick = function() {
@@ -96,7 +93,16 @@ function updateState(link, totalItems) {
 };
 
 function search(q, page, limit) {
-	//Build the querystring
+	//Update the browser history with the querystring. Useful for copying and pasting URLs.
+	if (history.pushState) {
+	   	var urlWithQuery = window.location.protocol + "//" + window.location.host + 
+	   		window.location.pathname + '?q=' + q + '&page=' + page + '&limit=' + limit;
+   		window.history.pushState({ path: urlWithQuery }, 'Twitch Search Stream' , urlWithQuery);
+	}
+	makeSearchRequest(q, page, limit);
+};
+
+function buildSearchQueryString(q, page, limit) {
 	var queryString = '?';
 	if(q != '') { //add the search term
 		queryString += 'q=' + q;
@@ -109,28 +115,11 @@ function search(q, page, limit) {
 	} else if(limit >= 1) {
 		queryString += '&limit=' + limit;
 	}
+	return queryString;
+}
 
-	if(onload == true) {
-		//Update the browser history with the querystring. Useful for copying and pasting URLs.
-		if (history.replaceState) {
-	    	var urlWithQuery = window.location.protocol + "//" + window.location.host + 
-	    		window.location.pathname + '?q=' + q + '&page=' + page + '&limit=' + limit;
-    		window.history.replaceState({ path: urlWithQuery }, 'Twitch Search Stream' , urlWithQuery);
-		}
-		onload = false;
-	} else {
-		//Update the browser history with the querystring. Useful for copying and pasting URLs.
-		if (history.pushState) {
-	    	var urlWithQuery = window.location.protocol + "//" + window.location.host + 
-	    		window.location.pathname + '?q=' + q + '&page=' + page + '&limit=' + limit;
-    		window.history.pushState({ path: urlWithQuery }, 'Twitch Search Stream' , urlWithQuery);
-		}
-	}
-	
-	makeSearchRequest(queryString);
-};
-
-function makeSearchRequest(queryString) {
+function makeSearchRequest(q, page, limit) {
+	var queryString = buildSearchQueryString(q, page, limit);
 	var scriptTag = document.createElement('script');
 	scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString + '&callback=searchCallback';
 	document.body.appendChild(scriptTag);
