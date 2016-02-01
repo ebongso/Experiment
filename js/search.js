@@ -1,11 +1,37 @@
 "use strict"
 const TWITCHAPISEARCHSTREAMURL = 'https://api.twitch.tv/kraken/search/streams';
 var currentState = { "q": "", "page": 0, "limit": 5, "totalPage": 0 }
+var onload = false;
+
+//After the page is reload, check if there's querystring in the URL
+if(window.location.search) {
+	onload = true;
+	refresh();
+}
+
+//Reload the page when the back/forward button is pressed
+window.onpopstate = function(event) {
+	onload = true;
+	refresh();
+};
+
+function refresh() {	
+	updateState(window.location.search.slice(1), 0);
+	document.getElementById('searchQuery').value = unescape(currentState.q);
+	search(currentState.q, currentState.page, currentState.limit);
+}
 
 document.getElementById('searchBtn').onclick = function() {
 	var q = document.getElementById('searchQuery').value;
 	currentState.page = 0; //reset to page 1
 	search(q, currentState.page, currentState.limit);
+};
+
+//Invoke the searchBtn click event when the "Enter" key is pressed
+document.getElementById('searchQuery').onkeypress = function(event) {
+	if(event.keyCode == 13) { //The "Enter" key
+		document.getElementById('searchBtn').click();
+	}
 };
 
 document.getElementById('pageLeftArrow').onclick = function() {
@@ -39,18 +65,41 @@ document.getElementById('pageRightArrow').onclick = function() {
 function showPageLeftArrow(show) {
 	document.getElementById('pageLeftArrow').setAttribute('style', 
 		'visibility: ' + (show ? 'visible' : 'hidden') + '; cursor: pointer;');
-}
+};
 
 function showPageRightArrow(show) {
 	document.getElementById('pageRightArrow').setAttribute('style', 
 		'visibility: ' + (show ? 'visible' : 'hidden') + '; cursor: pointer;');
-}
+};
+
+function updateState(link, totalItems) {
+	var qString = link.split('&');
+	var offset = 0;
+	var offsetAvailable = false;
+	for(let i = 0; i < qString.length; i++) {
+		var q = qString[i].split('=');
+		if(q[0] == 'q') {
+			currentState.q = q[1];
+		} else if(q[0] == 'limit') {
+			currentState.limit = q[1];
+		} else if(q[0] == 'offset') {
+			offset = q[1];
+			offsetAvailable = true;
+		} else if(q[0] == 'page') {
+			currentState.page = q[1];
+		}
+	}
+		if(offsetAvailable == true) {
+		currentState.page = offset / currentState.limit;
+	}
+	currentState.totalPage = Math.ceil(totalItems / currentState.limit);
+};
 
 function search(q, page, limit) {
 	//Build the querystring
-	var queryString = '?callback=searchCallback';
+	var queryString = '?';
 	if(q != '') { //add the search term
-		queryString += '&q=' + q;
+		queryString += 'q=' + q;
 	}
 	if(page > 0) { //add the offset. Twitch API starts with 0 then increments by limit
 		queryString += '&offset=' + (page * limit);
@@ -61,14 +110,31 @@ function search(q, page, limit) {
 		queryString += '&limit=' + limit;
 	}
 
+	if(onload == true) {
+		//Update the browser history with the querystring. Useful for copying and pasting URLs.
+		if (history.replaceState) {
+	    	var urlWithQuery = window.location.protocol + "//" + window.location.host + 
+	    		window.location.pathname + '?q=' + q + '&page=' + page + '&limit=' + limit;
+    		window.history.replaceState({ path: urlWithQuery }, 'Twitch Search Stream' , urlWithQuery);
+		}
+		onload = false;
+	} else {
+		//Update the browser history with the querystring. Useful for copying and pasting URLs.
+		if (history.pushState) {
+	    	var urlWithQuery = window.location.protocol + "//" + window.location.host + 
+	    		window.location.pathname + '?q=' + q + '&page=' + page + '&limit=' + limit;
+    		window.history.pushState({ path: urlWithQuery }, 'Twitch Search Stream' , urlWithQuery);
+		}
+	}
+	
 	makeSearchRequest(queryString);
-}
+};
 
 function makeSearchRequest(queryString) {
 	var scriptTag = document.createElement('script');
-	scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString;
+	scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString + '&callback=searchCallback';
 	document.body.appendChild(scriptTag);
-}
+};
 
 function searchCallback(response) {
 	if(response != null) {
@@ -111,23 +177,6 @@ function searchCallback(response) {
 		}
 	}
 
-	function updateState(link, totalItems) {
-		var qString = link.split('&');
-		var offset = 0;
-		for(let i = 0; i < qString.length; i++) {
-			var q = qString[i].split('=');
-			if(q[0] == 'q') {
-				currentState.q = q[1];
-			} else if(q[0] == 'limit') {
-				currentState.limit = q[1];
-			} else if(q[0] == 'offset') {
-				offset = q[1];
-			}
-		}
-		currentState.page = offset / currentState.limit;
-		currentState.totalPage = Math.ceil(totalItems / currentState.limit);
-	}
-
 	function createItem(previewImage, displayName, gameName, viewers, status) {
 		var liTag = document.createElement('li');
 		
@@ -151,4 +200,4 @@ function searchCallback(response) {
 
 		return liTag;
 	}
-}
+};
