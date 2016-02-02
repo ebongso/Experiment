@@ -14,14 +14,20 @@ window.onpopstate = function(event) {
 
 function refresh() {  
   updateState(window.location.search.slice(1), 0);
-  document.getElementById('searchQuery').value = unescape(currentState.q);
+  document.getElementById('searchQuery').value = decodeURI(currentState.q);
   makeSearchRequest(currentState.q, currentState.page, currentState.limit);
 }
 
 document.getElementById('searchBtn').onclick = function() {
   var q = document.getElementById('searchQuery').value;
-  currentState.page = 0; //reset to page 1
-  search(q, currentState.page, currentState.limit);
+  //Remove the whole script tag in the search query
+  q = q.replace(/<script.*?>.*?<\/script>/ig, '');
+  if(q == '') {
+    alert("This is not a valid query. Please try again.");
+  } else {
+    currentState.page = 0; //reset to page 1
+    search(q, currentState.page, currentState.limit);
+  }
 };
 
 //Invoke the searchBtn click event when the "Enter" key is pressed
@@ -32,13 +38,13 @@ document.getElementById('searchQuery').onkeypress = function(event) {
 };
 
 document.getElementById('pageLeftArrow').onclick = function() {
-  var q = document.getElementById('searchQuery').value;
+  var q = currentState.q;
   var page = currentState.page - 1;
   search(q, page, currentState.limit);
 };
 
 document.getElementById('pageRightArrow').onclick = function() {
-  var q = document.getElementById('searchQuery').value;
+  var q = currentState.q;
   var page = currentState.page + 1;
   search(q, page, currentState.limit);
 };
@@ -130,7 +136,7 @@ function searchCallback(response) {
     var stringJson = JSON.stringify(response);
     var json = JSON.parse(stringJson);
     if(json.hasOwnProperty('status')) { //only failed calls have the status key
-      console.log('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
+      alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
     } else {
       document.getElementById('totalItems').innerHTML = json._total;
 
