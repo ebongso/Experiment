@@ -37,3 +37,12 @@ section {
   padding: 5px;
   display: block;
 }
+
+.active {
+  visibility: visible;
+  cursor: pointer;
+}
+
+.inactive {
+  visibility: hidden;
+}

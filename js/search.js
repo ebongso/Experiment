@@ -16,8 +16,14 @@ function refresh() {
   updateState(window.location.search.slice(1), 0);
   document.getElementById('searchQuery').value = decodeURI(currentState.q);
   makeSearchRequest(currentState.q, currentState.page, currentState.limit);
-}
+};
 
+//Invoke the searchBtn click event when the "Enter" key is pressed
+document.getElementById('searchQuery').onkeypress = function(event) {
+  if(event.keyCode == 13) { //The "Enter" key
+    document.getElementById('searchBtn').click();
+  }
+};
 document.getElementById('searchBtn').onclick = function() {
   var q = document.getElementById('searchQuery').value;
   //Remove the whole script tag in the search query
@@ -27,13 +33,6 @@ document.getElementById('searchBtn').onclick = function() {
   } else {
     currentState.page = 0; //reset to page 1
     search(q, currentState.page, currentState.limit);
-  }
-};
-
-//Invoke the searchBtn click event when the "Enter" key is pressed
-document.getElementById('searchQuery').onkeypress = function(event) {
-  if(event.keyCode == 13) { //The "Enter" key
-    document.getElementById('searchBtn').click();
   }
 };
 
@@ -49,47 +48,21 @@ document.getElementById('pageRightArrow').onclick = function() {
   search(q, page, currentState.limit);
 };
 
-function updatePaging(currentPage, totalPage) {
-  if(totalPage <= 1) { //There's only 1 page or no search result
-    showPageLeftArrow(false);
-    showPageRightArrow(false);
-  } else if (currentPage >= totalPage - 1) { //This is the last page
-    showPageLeftArrow(true);
-    showPageRightArrow(false);
-  } else if(currentPage > 0) { //In between pages
-    showPageLeftArrow(true);
-    showPageRightArrow(true);
-  } else if(currentPage <= 0) { //This is the first page
-    showPageLeftArrow(false);
-    showPageRightArrow(true);
-  }
-}
-
-function showPageLeftArrow(show) {
-  document.getElementById('pageLeftArrow').setAttribute('style', 
-    'visibility: ' + (show ? 'visible' : 'hidden') + '; cursor: pointer;');
-};
-
-function showPageRightArrow(show) {
-  document.getElementById('pageRightArrow').setAttribute('style', 
-    'visibility: ' + (show ? 'visible' : 'hidden') + '; cursor: pointer;');
-};
-
 function updateState(link, totalItems) {
   var qString = link.split('&');
   var offset = 0;
   var offsetAvailable = false;
-  for(let i = 0; i < qString.length; i++) {
-    var q = qString[i].split('=');
-    if(q[0] == 'q') {
-      currentState.q = q[1];
-    } else if(q[0] == 'limit') {
-      currentState.limit = q[1];
-    } else if(q[0] == 'offset') {
-      offset = q[1];
+  for(let i = 0, count = qString.length; i < count; i++) {
+    var params = qString[i].split('=');
+    if(params[0] == 'q') {
+      currentState.q = params[1];
+    } else if(params[0] == 'limit') {
+      currentState.limit = params[1];
+    } else if(params[0] == 'offset') {
+      offset = params[1];
       offsetAvailable = true;
-    } else if(q[0] == 'page') {
-      currentState.page = q[1];
+    } else if(params[0] == 'page') {
+      currentState.page = params[1];
     }
   }
     if(offsetAvailable == true) {
@@ -108,33 +81,43 @@ function search(q, page, limit) {
   makeSearchRequest(q, page, limit);
 };
 
-function buildSearchQueryString(q, page, limit) {
-  var queryString = '?';
-  if(q != '') { //add the search term
-    queryString += 'q=' + q;
-  }
-  if(page > 0) { //add the offset. Twitch API starts with 0 then increments by limit
-    queryString += '&offset=' + (page * limit);
-  }
-  if(limit >= 100) { //add the number of items returned per page. Max is 100
-    queryString += '&limit=100';
-  } else if(limit >= 1) {
-    queryString += '&limit=' + limit;
-  }
-  return queryString;
-}
-
 function makeSearchRequest(q, page, limit) {
   var queryString = buildSearchQueryString(q, page, limit);
   var scriptTag = document.createElement('script');
   scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString + '&callback=searchCallback';
   document.body.appendChild(scriptTag);
+
+  function buildSearchQueryString(q, page, limit) {
+    var queryString = '?';
+    if(q != '') { //add the search term
+      queryString += 'q=' + q;
+    }
+    if(page > 0) { //add the offset. Twitch API starts with 0 then increments by limit
+      queryString += '&offset=' + (page * limit);
+    }
+    if(limit >= 100) { //add the number of items returned per page. Max is 100
+      queryString += '&limit=100';
+    } else if(limit >= 1) {
+      queryString += '&limit=' + limit;
+    }
+    return queryString;
+  };
 };
 
 function searchCallback(response) {
-  if(response != null) {
-    var stringJson = JSON.stringify(response);
-    var json = JSON.parse(stringJson);
+  if(response) {
+    try {
+      var stringJson = JSON.stringify(response);
+    } catch(ex) {
+      alert('JSON Stringify Error: ' + ex);
+    }
+
+    try {
+      var json = JSON.parse(stringJson);
+    } catch(ex) {
+      alert('JSON Parse Error: ' + ex);
+    }
+
     if(json.hasOwnProperty('status')) { //only failed calls have the status key
       alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
     } else {
@@ -144,15 +127,10 @@ function searchCallback(response) {
       updateState(currentLink, json._total);
       updatePaging(currentState.page, currentState.totalPage);
 
-      document.getElementById('currentPage').innerHTML = 
-        currentState.totalPage == 0 ? currentState.page : currentState.page + 1;
-      document.getElementById('totalPage').innerHTML = currentState.totalPage;
-
       var streams = json.streams;
       var listItem = document.createDocumentFragment();
 
-      var numStreams = streams.length;
-      for(let i = 0; i < numStreams; i++) {
+      for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
         var previewImage = streams[i].preview.template;
         previewImage = previewImage.replace('{width}', '100');
         previewImage = previewImage.replace('{height}', '100');
@@ -192,5 +170,35 @@ function searchCallback(response) {
     liTag.appendChild(statusSpanTag);
 
     return liTag;
-  }
+  };
+
+  function updatePaging(currentPage, totalPage) {
+    if(totalPage <= 1) { //There's only 1 page or no search result
+      showPageLeftArrow(false);
+      showPageRightArrow(false);
+    } else if (currentPage >= totalPage - 1) { //This is the last page
+      showPageLeftArrow(true);
+      showPageRightArrow(false);
+    } else if(currentPage > 0) { //In between pages
+      showPageLeftArrow(true);
+      showPageRightArrow(true);
+    } else if(currentPage <= 0) { //This is the first page
+      showPageLeftArrow(false);
+      showPageRightArrow(true);
+    }  
+
+    document.getElementById('currentPage').innerHTML = 
+      totalPage == 0 ? currentPage : currentPage + 1;
+    document.getElementById('totalPage').innerHTML = totalPage;
+
+    function showPageLeftArrow(show) {
+      document.getElementById('pageLeftArrow').setAttribute('class', 
+        (show ? 'active' : 'inactive'));
+    };
+
+    function showPageRightArrow(show) {
+      document.getElementById('pageRightArrow').setAttribute('class', 
+        (show ? 'active' : 'inactive'));
+    };
+  };
 };
