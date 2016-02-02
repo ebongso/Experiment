@@ -34,30 +34,30 @@ document.getElementById('searchQuery').onkeypress = function(event) {
 document.getElementById('pageLeftArrow').onclick = function() {
   var q = document.getElementById('searchQuery').value;
   var page = currentState.page - 1;
-
-  if(page <= 0) {   
-    showPageLeftArrow(false);
-    showPageRightArrow(true);
-  } else if(page > 0) {
-    showPageLeftArrow(true);
-    showPageRightArrow(true);
-  }
   search(q, page, currentState.limit);
 };
 
 document.getElementById('pageRightArrow').onclick = function() {
   var q = document.getElementById('searchQuery').value;
   var page = currentState.page + 1;
-
-  if (page >= currentState.totalPage - 1) {
-    showPageRightArrow(false);
-    showPageLeftArrow(true);
-  } else if(page > 0) {
-    showPageLeftArrow(true);
-    showPageRightArrow(true);
-  } 
   search(q, page, currentState.limit);
 };
+
+function updatePaging(currentPage, totalPage) {
+  if(totalPage <= 1) { //There's only 1 page or no search result
+    showPageLeftArrow(false);
+    showPageRightArrow(false);
+  } else if (currentPage >= totalPage - 1) { //This is the last page
+    showPageLeftArrow(true);
+    showPageRightArrow(false);
+  } else if(currentPage > 0) { //In between pages
+    showPageLeftArrow(true);
+    showPageRightArrow(true);
+  } else if(currentPage <= 0) { //This is the first page
+    showPageLeftArrow(false);
+    showPageRightArrow(true);
+  }
+}
 
 function showPageLeftArrow(show) {
   document.getElementById('pageLeftArrow').setAttribute('style', 
@@ -136,9 +136,7 @@ function searchCallback(response) {
 
       var currentLink = json._links.self;
       updateState(currentLink, json._total);
-      if(currentState.totalPage <= 0) {
-        showPageRightArrow(false);
-      }
+      updatePaging(currentState.page, currentState.totalPage);
 
       document.getElementById('currentPage').innerHTML = 
         currentState.totalPage == 0 ? currentState.page : currentState.page + 1;
