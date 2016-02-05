@@ -5,8 +5,9 @@ var app = (function(state, uiModel) {
     "ACTIVE": 'active',
     "CURRENT_PAGE": 'currentPage',
     "INACTIVE": 'inactive',
-    "ITEM_STATUS": 'item-status',
-    "ITEM_SUBTITLE": 'item-subtitle',
+    "ITEM_STATUS": 'itemStatus',
+    "ITEM_SUBTITLE": 'itemSubtitle',
+    "LOADING_MASK": 'loadingMask',
     "PAGE_LEFT_ARROW": 'pageLeftArrow',
     "PAGE_RIGHT_ARROW": 'pageRightArrow',
     "SEARCH_BTN": 'searchBtn',
@@ -76,6 +77,19 @@ var app = (function(state, uiModel) {
       document.getElementById(CONFIG.TOTAL_ITEMS).innerHTML = value;
     };
 
+    function showLoadingMask(show) {
+        document.getElementById(CONFIG.LOADING_MASK).setAttribute('class', 
+          (show ? CONFIG.LOADING_MASK : CONFIG.INACTIVE));
+      };
+
+    function updateListItem(listItem) {
+      var ul = document.getElementById(CONFIG.SEARCH_ITEMS);
+      while(ul.firstChild) { //clear out the list on the page
+        ul.removeChild(ul.firstChild);
+      }
+      ul.appendChild(listItem);
+    };
+
     function updatePaging(currentPage, totalPage) {
       if(totalPage <= 1) { //There's only 1 page or no search result
         showPageLeftArrow(false);
@@ -105,14 +119,6 @@ var app = (function(state, uiModel) {
           (show ? CONFIG.ACTIVE : CONFIG.INACTIVE));
       };
     };
-
-    function updateListItem(listItem) {
-      var ul = document.getElementById(CONFIG.SEARCH_ITEMS);
-      while(ul.firstChild) { //clear out the list on the page
-        ul.removeChild(ul.firstChild);
-      }
-      ul.appendChild(listItem);
-    };
     
     return {
       getPageLeftArrow: getPageLeftArrow,
@@ -122,6 +128,7 @@ var app = (function(state, uiModel) {
       getSearchQueryInput: getSearchQueryInput,
       setSearchQueryInput: setSearchQueryInput,
       setTotalItemField: setTotalItemField,
+      showLoadingMask: showLoadingMask,
       updateListItem: updateListItem,
       updatePaging: updatePaging
     };
@@ -172,6 +179,7 @@ var app = (function(state, uiModel) {
   };
 
   function makeSearchRequest(q, page, limit) {
+    uiModel.showLoadingMask(true);
     var queryString = '?';
     makeSearchAPICall(buildSearchQueryString(q, page, limit));  
 
@@ -189,7 +197,7 @@ var app = (function(state, uiModel) {
       }
     };
     
-    function makeSearchAPICall() {
+    function makeSearchAPICall() {      
       var scriptTag = document.createElement('script');
       scriptTag.src = CONFIG.TWITCH_API_SEARCH_STREAM_URL + 
         queryString + '&callback=app.searchCallback';
@@ -304,6 +312,10 @@ var app = (function(state, uiModel) {
               listItem.appendChild(item);
             }
             uiModel.updateListItem(listItem);
+
+            setTimeout(function(){
+              uiModel.showLoadingMask(false);
+            }, 500);
           }
         }
       } catch (ex) {
