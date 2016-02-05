@@ -235,12 +235,17 @@ var app = (function(state, uiModel) {
     return state.update(params.q, params.page, params.limit, params.totalPage);
   };
 
-  function createItem(previewImage, displayName, gameName, viewers, status) {
+  function createItem(previewImage, displayName, gameName, viewers, status, channelUrl) {
     var liTag = document.createElement('li');
     
+    var aTag = document.createElement('a');
+    aTag.setAttribute('target', '_blank');
+    aTag.setAttribute('href', channelUrl);
+    aTag.setAttribute('title', 'Click to watch now: ' + channelUrl);
     var imgTag = document.createElement('img');
     imgTag.src = previewImage;
-    liTag.appendChild(imgTag);
+    aTag.appendChild(imgTag);
+    liTag.appendChild(aTag);
 
     var h3Tag = document.createElement('h3');
     h3Tag.innerHTML = displayName;
@@ -340,7 +345,8 @@ var app = (function(state, uiModel) {
               previewImage = previewImage.replace('{height}', '100');
 
               var item = createItem(previewImage, streams[i].channel.display_name,
-                streams[i].game, streams[i].viewers, streams[i].channel.status)
+                streams[i].game, streams[i].viewers, streams[i].channel.status, 
+                streams[i].channel.url);
               listItem.appendChild(item);
             }
             uiModel.updateListItem(listItem);
