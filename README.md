@@ -1,5 +1,7 @@
 A simple web app that calls the TWITCH.TV Search Stream endpoint.
 
+This app is hosted at [http://ebongso.github.io].
+
 #### Features:
 
 1. Search for a stream on TWITCH.TV using the "Search" button or "Enter" key on the keyboard.
@@ -47,9 +49,7 @@ A simple web app that calls the TWITCH.TV Search Stream endpoint.
 ![Go to a page](http://ebongso.github.io/images/app-screenshots/NextPage.png)
 
 ##### Show loading icon:
-![Loading Mask](http://ebongso.github.io/images/app-screenshots/Loading Mask.png)
-
-This app is hosted at [http://ebongso.github.io].
+![Loading Mask](http://ebongso.github.io/images/app-screenshots/LoadingMask.png)
 
 [http://ebongso.github.io]:http://ebongso.github.io
 [https://github.com/justintv/Twitch-API/issues/495]:https://github.com/justintv/Twitch-API/issues/495
