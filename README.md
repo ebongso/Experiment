@@ -11,13 +11,13 @@ A simple web app that calls the TWITCH.TV Search Stream endpoint.
 7. Clicking each preview image opens up the stream in a new tab.
 8. Display the search results using a list view
 9. The page number resets to 1 when a new query is searched or the "Items per page" is changed.
-10. Do not allow search with no query.
+10. Do not allow search with no query or query with script tag.
 
 #### Known issues on the Search Stream endpoint:
 
-1. Inconsistent search results returned. Sometimes the streams in the search results are fewer than the "limit" returned by the endpoint.
-2. Sometimes the service is down and returns the "(503) Service Unavailable" error message.
-3. Sometimes searching for any query returns 0 result. A bug was reported: [https://github.com/justintv/Twitch-API/issues/495].
+1. Inconsistent search results returned. Sometimes the streams in the search results are fewer than the "limit" returned by the endpoint. (No workaround. There are issues reported, but no resolution: [https://discuss.dev.twitch.tv/t/is-the-search-streams-part-of-the-api-broken/2385].)
+2. Sometimes the service is down and returns the "(503) Service Unavailable" error message. (No workaround. Have to try later.)
+3. Sometimes searching for any query returns 0 result. A bug was reported: [https://github.com/justintv/Twitch-API/issues/495]. (No workaround. Have to report as a bug, so the TWITCH.TV support can restart the service.)
 
 #### Potential enhancements:
 
@@ -26,7 +26,31 @@ A simple web app that calls the TWITCH.TV Search Stream endpoint.
 3. Add Twitter Bootstrap to enhance the UI. 
 4. Make a grid view display.
 
+#### Screenshots:
+
+##### First time visiting the site:
+![First Time](http://ebongso.github.io/images/app-screenshots/FirstTime.png)
+
+##### No search query:
+![No Search Query](http://ebongso.github.io/images/app-screenshots/NoSearchQuery.png)
+
+##### Query with script tag:
+![Query with script tag](http://ebongso.github.io/images/app-screenshots/ScriptTag.png)
+
+##### Search starcraft:
+![Search Starcraft](http://ebongso.github.io/images/app-screenshots/SearchStarcraft.png)
+
+##### Switch Items Per Page:
+![Switch Items Per Page](http://ebongso.github.io/images/app-screenshots/SwitchItemsPerPage.png)
+
+##### Go to a page by clicking the arrows:
+![Go to a page](http://ebongso.github.io/images/app-screenshots/NextPage.png)
+
+##### Show loading icon:
+![Loading Mask](http://ebongso.github.io/images/app-screenshots/Loading Mask.png)
+
 This app is hosted at [http://ebongso.github.io].
 
 [http://ebongso.github.io]:http://ebongso.github.io
 [https://github.com/justintv/Twitch-API/issues/495]:https://github.com/justintv/Twitch-API/issues/495
+[https://discuss.dev.twitch.tv/t/is-the-search-streams-part-of-the-api-broken/2385]:https://discuss.dev.twitch.tv/t/is-the-search-streams-part-of-the-api-broken/2385
