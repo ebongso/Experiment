@@ -12,6 +12,10 @@ section {
   float: right;
 }
 
+.items span {
+  font: 200 12px/1.5 Helvetica, Verdana, sans-serif;  
+}
+
 .items ul {
   padding: 0;
   list-style: none;
@@ -20,11 +24,14 @@ section {
 .items ul li {
   padding: 5px 5px 5px 0;
   overflow: auto;
+  border: 1px #DDDDDD solid;
+  border-radius: 5px;
+  margin: 10px 0 10px 0;
 }
 
 .items ul li img {
   float: left;
-  padding: 18px 10px 0 0;
+  padding: 18px 10px 18px 10px;
   width: 100px;
   height: 100px;
 }
@@ -32,13 +39,11 @@ section {
 .items ul li .itemSubtitle {
   padding: 5px;
   display: block;
-  font: 200 12px/1.5 Helvetica, Verdana, sans-serif;
 }
 
 .items ul li .itemStatus {
   padding: 5px;
   display: block;
-  font: 200 12px/1.5 Helvetica, Verdana, sans-serif;
 }
 
 .active {
