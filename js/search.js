@@ -3,6 +3,7 @@
 var app = (function(state, uiModel) {
   const CONFIG = {
     "ACTIVE": 'active',
+    "CLIENT_ID": "1kk5ulauc6uq5lv5n1c97zcwl4qw4dm",
     "CURRENT_PAGE": 'currentPage',
     "INACTIVE": 'inactive',
     "ITEM_STATUS": 'itemStatus',
@@ -170,6 +171,8 @@ var app = (function(state, uiModel) {
       "limit": 25, 
       "totalPage": 0
     };
+
+    //let was used instead of var, but Firefox version < 44 doesn't support it
     for(var i = 0, count = qString.length; i < count; i++) {
       var params = qString[i].split('=');
       if(params[0] == 'q') {
@@ -190,6 +193,7 @@ var app = (function(state, uiModel) {
     return parsedParams;  
   };
 
+  //Build the URL based on the query
   function search(q, page, limit) {
     //Update the browser history with the querystring. Useful for URL bookmarking
     if (history.pushState) {
@@ -219,10 +223,11 @@ var app = (function(state, uiModel) {
       }
     };
     
+    //Use JSONP when utilizing the Twitch API's
     function makeSearchAPICall() {      
       var scriptTag = document.createElement('script');
       scriptTag.src = CONFIG.TWITCH_API_SEARCH_STREAM_URL + 
-        queryString + '&callback=app.searchCallback';
+        queryString + '&callback=app.searchCallback&client_id=' + CONFIG.CLIENT_ID;
       document.body.appendChild(scriptTag);    
     };
   };
@@ -235,6 +240,7 @@ var app = (function(state, uiModel) {
     return state.update(params.q, params.page, params.limit, params.totalPage);
   };
 
+  //Build out the list item
   function createItem(previewImage, displayName, gameName, viewers, status, channelUrl) {
     var liTag = document.createElement('li');
     
@@ -282,6 +288,11 @@ var app = (function(state, uiModel) {
     };
 
     uiModel.getItemsPerPage().onchange = function(event) {
+      var q = uiModel.getSearchQueryInput();
+      if(q == '') {
+        alert("The search query was not supplied. Please try again.");
+        return;
+      }
       var currentState = getState();
       var selectedValue = parseInt(uiModel.getItemsPerPageSelection());
 
@@ -301,7 +312,7 @@ var app = (function(state, uiModel) {
       //Remove the whole script tag in the search query
       q = q.replace(/<script.*?>.*?<\/script>/ig, '');
       if(q == '') {
-        alert("This is not a valid query. Please try again.");
+        alert("This is not a valid search query. Please try again.");
       } else {
         var currentState = getState();
         search(q, 0, currentState.limit); //reset to page 1
@@ -336,9 +347,10 @@ var app = (function(state, uiModel) {
             uiModel.updatePaging(currentState.page, currentState.totalPage);
             uiModel.setItemsPerPage(String(currentState.limit));
 
+            //Build out the list
             var streams = json.streams;
             var listItem = document.createDocumentFragment();
-
+            //let was used instead of var, but Firefox version < 44 doesn't support it
             for(var i = 0, numStreams = streams.length; i < numStreams; i++) {
               var previewImage = streams[i].preview.template;
               previewImage = previewImage.replace('{width}', '100');
