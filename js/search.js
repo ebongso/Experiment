@@ -31,7 +31,6 @@ var app = (function(state, uiModel) {
     return {
       get: function() {
         if(!mState) {
-          console.log("new state");
           mState = init();
         }
       return mState;
@@ -243,7 +242,7 @@ var app = (function(state, uiModel) {
 
     function refresh() {  
       var currentState = parseSearchQueryString(window.location.search.slice(1), 0);
-      uiModel.setSearchQueryInput(decodeURI(currentState.q));
+      uiModel.setSearchQueryInput((decodeURI(currentState.q)).replace(/\+/g, ' '));
       makeSearchRequest(currentState.q, currentState.page, currentState.limit);
     };
 
@@ -276,42 +275,42 @@ var app = (function(state, uiModel) {
     };
   };
   
-return {
-  init: init,
-  searchCallback: function (json) {
-    try {
-      if(json && typeof json === "object" && json !== null) {    
-        if(json.hasOwnProperty('status')) { //only failed calls have the status key
-          alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
-        } else {
-          uiModel.setTotalItemField(json._total);
+  return {
+    init: init,
+    searchCallback: function (json) {
+      try {
+        if(json && typeof json === "object" && json !== null) {    
+          if(json.hasOwnProperty('status')) { //only failed calls have the status key
+            alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
+          } else {
+            uiModel.setTotalItemField(json._total);
 
-          var currentLink = json._links.self;
-          //This only updates when the response is returned
-          var currentState = parseSearchQueryString(currentLink, json._total); 
-          updateState(currentState);
-          uiModel.updatePaging(currentState.page, currentState.totalPage);
+            var currentLink = json._links.self;
+            //This only updates when the response is returned
+            var currentState = parseSearchQueryString(currentLink, json._total); 
+            updateState(currentState);
+            uiModel.updatePaging(currentState.page, currentState.totalPage);
 
-          var streams = json.streams;
-          var listItem = document.createDocumentFragment();
+            var streams = json.streams;
+            var listItem = document.createDocumentFragment();
 
-          for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
-            var previewImage = streams[i].preview.template;
-            previewImage = previewImage.replace('{width}', '100');
-            previewImage = previewImage.replace('{height}', '100');
+            for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
+              var previewImage = streams[i].preview.template;
+              previewImage = previewImage.replace('{width}', '100');
+              previewImage = previewImage.replace('{height}', '100');
 
-            var item = createItem(previewImage, streams[i].channel.display_name,
-              streams[i].game, streams[i].viewers, streams[i].channel.status)
-            listItem.appendChild(item);
+              var item = createItem(previewImage, streams[i].channel.display_name,
+                streams[i].game, streams[i].viewers, streams[i].channel.status)
+              listItem.appendChild(item);
+            }
+            uiModel.updateListItem(listItem);
           }
-          uiModel.updateListItem(listItem);
         }
+      } catch (ex) {
+        alert("Invalid JSON data");
+        console.log(ex);
       }
-    } catch (ex) {
-      alert("Invalid JSON data");
-      console.log(ex);
     }
-  }
-};
+  };
 })();
 app.init();
