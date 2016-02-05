@@ -1,4 +1,6 @@
 "use strict"
+
+var app = (function() {
 const TWITCHAPISEARCHSTREAMURL = 'https://api.twitch.tv/kraken/search/streams';
 
 var state = (function () {
@@ -15,6 +17,7 @@ var state = (function () {
   return {
     get: function() {
       if(!mState) {
+      console.log("new state");
       mState = init();
     }
     return mState;
@@ -31,51 +34,7 @@ var state = (function () {
   };
 })();
 
-//After the page is reload, check if there's querystring in the URL
-if(window.location.search) {
-  refresh();
-}
-
-//Reload the page when the back/forward button is pressed
-window.onpopstate = function(event) {
-  refresh();
-};
-
-function refresh() {  
-  var currentState = parseSearchQueryString(window.location.search.slice(1), 0);
-  document.getElementById('searchQuery').value = decodeURI(currentState.q);
-  makeSearchRequest(currentState.q, currentState.page, currentState.limit);
-};
-
-//Invoke the searchBtn click event when the "Enter" key is pressed
-document.getElementById('searchQuery').onkeypress = function(event) {
-  if(event.keyCode == 13) { //The "Enter" key
-    document.getElementById('searchBtn').click();
-  }
-};
-document.getElementById('searchBtn').onclick = function() {
-  var q = document.getElementById('searchQuery').value;
-  //Remove the whole script tag in the search query
-  q = q.replace(/<script.*?>.*?<\/script>/ig, '');
-  if(q == '') {
-    alert("This is not a valid query. Please try again.");
-  } else {
-    var currentState = state.get();
-    search(q, 0, currentState.limit); //reset to page 1 due to new search query
-  }
-};
-
-document.getElementById('pageLeftArrow').onclick = function() {
-  var currentState = state.get();
-  search(currentState.q, currentState.page - 1, currentState.limit);
-};
-
-document.getElementById('pageRightArrow').onclick = function() {  
-  var currentState = state.get();
-  search(currentState.q, currentState.page + 1, currentState.limit);
-};
-
-function parseSearchQueryString(link, totalItems) {
+var parseSearchQueryString = function(link, totalItems) {
   var qString = link.split('&');
   var offset = 0;
   var offsetAvailable = false;
@@ -136,47 +95,14 @@ function makeSearchRequest(q, page, limit) {
   
   function makeSearchAPICall() {
     var scriptTag = document.createElement('script');
-    scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString + '&callback=searchCallback';
+    scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString + '&callback=app.searchCallback';
     document.body.appendChild(scriptTag);    
   };
 };
 
-function searchCallback(json) {
-  try {
-    if(json && typeof json === "object" && json !== null) {    
-      if(json.hasOwnProperty('status')) { //only failed calls have the status key
-        alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
-      } else {
-        document.getElementById('totalItems').innerHTML = json._total;
-
-        var currentLink = json._links.self;
-        var currentState = parseSearchQueryString(currentLink, json._total); //This only updates when the response is returned
-    updateState(currentState);
-        updatePaging(currentState.page, currentState.totalPage);
-
-        var streams = json.streams;
-        var listItem = document.createDocumentFragment();
-
-        for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
-          var previewImage = streams[i].preview.template;
-          previewImage = previewImage.replace('{width}', '100');
-          previewImage = previewImage.replace('{height}', '100');
-
-          var item = createItem(previewImage, streams[i].channel.display_name,
-            streams[i].game, streams[i].viewers, streams[i].channel.status)
-          listItem.appendChild(item);
-        }
-
-        var ul = document.getElementById('searchItems');
-        while(ul.firstChild) { //clear out the list on the page
-          ul.removeChild(ul.firstChild);
-        }
-        document.getElementById('searchItems').appendChild(listItem);
-      }
-    }
-  } catch (ex) {
-    alert("Invalid JSON data");
-  }
+function getState() {
+  return state.get();
+};
 
   function updateState(params) {
     return state.update(params.q, params.page, params.limit, params.totalPage);
@@ -235,4 +161,91 @@ function searchCallback(json) {
         (show ? 'active' : 'inactive'));
     };
   };
+  
+return {
+  init: function() {
+    //After the page is reload, check if there's querystring in the URL
+    if(window.location.search) {
+      refresh();
+    };
+
+    //Reload the page when the back/forward button is pressed
+    window.onpopstate = function(event) {
+      refresh();
+    };
+
+    function refresh() {  
+      var currentState = parseSearchQueryString(window.location.search.slice(1), 0);
+        document.getElementById('searchQuery').value = decodeURI(currentState.q);
+      makeSearchRequest(currentState.q, currentState.page, currentState.limit);
+    };
+
+    //Invoke the searchBtn click event when the "Enter" key is pressed
+    document.getElementById('searchQuery').onkeypress = function(event) {
+      if(event.keyCode == 13) { //The "Enter" key
+        document.getElementById('searchBtn').click();
+      }
+    };
+    document.getElementById('searchBtn').onclick = function() {
+      var q = document.getElementById('searchQuery').value;
+      //Remove the whole script tag in the search query
+      q = q.replace(/<script.*?>.*?<\/script>/ig, '');
+      if(q == '') {
+        alert("This is not a valid query. Please try again.");
+      } else {
+        var currentState = getState();
+        search(q, 0, currentState.limit); //reset to page 1
+      }
+    }; 
+
+    document.getElementById('pageLeftArrow').onclick = function() {
+      var currentState = getState();
+      search(currentState.q, currentState.page - 1, currentState.limit);
+    };
+
+    document.getElementById('pageRightArrow').onclick = function() {  
+      var currentState = getState();
+      search(currentState.q, currentState.page + 1, currentState.limit);
+    };
+  },
+  searchCallback: function (json) {
+  try {
+    if(json && typeof json === "object" && json !== null) {    
+      if(json.hasOwnProperty('status')) { //only failed calls have the status key
+        alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
+      } else {
+        document.getElementById('totalItems').innerHTML = json._total;
+
+        var currentLink = json._links.self;
+        var currentState = parseSearchQueryString(currentLink, json._total); //This only updates when the response is returned
+    updateState(currentState);
+        updatePaging(currentState.page, currentState.totalPage);
+
+        var streams = json.streams;
+        var listItem = document.createDocumentFragment();
+
+        for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
+          var previewImage = streams[i].preview.template;
+          previewImage = previewImage.replace('{width}', '100');
+          previewImage = previewImage.replace('{height}', '100');
+
+          var item = createItem(previewImage, streams[i].channel.display_name,
+            streams[i].game, streams[i].viewers, streams[i].channel.status)
+          listItem.appendChild(item);
+        }
+
+        var ul = document.getElementById('searchItems');
+        while(ul.firstChild) { //clear out the list on the page
+          ul.removeChild(ul.firstChild);
+        }
+        document.getElementById('searchItems').appendChild(listItem);       
+      }
+    }
+  } catch (ex) {
+    alert("Invalid JSON data");
+  console.log(ex);
+  }
+}
 };
+})();
+app.init();
