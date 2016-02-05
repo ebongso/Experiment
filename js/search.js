@@ -1,108 +1,206 @@
 "use strict"
 
-var app = (function() {
-const TWITCHAPISEARCHSTREAMURL = 'https://api.twitch.tv/kraken/search/streams';
+var app = (function(state, uiModel) {
+  const CONFIG = {
+    "ACTIVE": 'active',
+    "CURRENT_PAGE": 'currentPage',
+    "INACTIVE": 'inactive',
+    "ITEM_STATUS": 'item-status',
+    "ITEM_SUBTITLE": 'item-subtitle',
+    "PAGE_LEFT_ARROW": 'pageLeftArrow',
+    "PAGE_RIGHT_ARROW": 'pageRightArrow',
+    "SEARCH_BTN": 'searchBtn',
+    "SEARCH_ITEMS": 'searchItems',
+    "SEARCH_QUERY": 'searchQuery',
+    "TOTAL_ITEMS": 'totalItems',
+    "TOTAL_PAGE": 'totalPage',
+    "TWITCH_API_SEARCH_STREAM_URL": 'https://api.twitch.tv/kraken/search/streams'
+  };
 
-var state = (function () {
-  var mState;
-  function init() {  
+  var State = function () {
+    var mState;
+    function init() {  
+      return {
+      "q": "", 
+      "page": 0, 
+      "limit": 5, 
+      "totalPage": 0
+      };
+    };
+    
     return {
-    "q": "", 
-    "page": 0, 
-    "limit": 5, 
-    "totalPage": 0
+      get: function() {
+        if(!mState) {
+          console.log("new state");
+          mState = init();
+        }
+      return mState;
+      },
+      update: function(q, page, limit, totalPage) {
+        mState = {
+          "q": q, 
+          "page": page, 
+          "limit": limit, 
+          "totalPage": totalPage
+          };
+        return mState;
+      }
     };
   };
-  
-  return {
-    get: function() {
-      if(!mState) {
-      console.log("new state");
-      mState = init();
-    }
-    return mState;
-  },
-  update: function(q, page, limit, totalPage) {
-    mState = {
-      "q": q, 
-      "page": page, 
-      "limit": limit, 
-      "totalPage": totalPage
+
+  var UiModel = function() {
+    function getPageLeftArrow() {
+      return document.getElementById(CONFIG.PAGE_LEFT_ARROW);
+    };
+
+    function getPageRightArrow() {
+      return document.getElementById(CONFIG.PAGE_RIGHT_ARROW);
+    };
+
+    function getSearchBtn() {
+      return document.getElementById(CONFIG.SEARCH_BTN);
+    };
+
+    function getSearchQuery() {
+      return document.getElementById(CONFIG.SEARCH_QUERY);
+    };
+
+    function getSearchQueryInput() {
+      return getSearchQuery().value;
+    };
+    
+    function setSearchQueryInput(value) {
+      getSearchQuery().value = value;
+    };
+
+    function setTotalItemField(value) {
+      document.getElementById(CONFIG.TOTAL_ITEMS).innerHTML = value;
+    };
+
+    function updatePaging(currentPage, totalPage) {
+      if(totalPage <= 1) { //There's only 1 page or no search result
+        showPageLeftArrow(false);
+        showPageRightArrow(false);
+      } else if (currentPage >= totalPage - 1) { //This is the last page
+        showPageLeftArrow(true);
+        showPageRightArrow(false);
+      } else if(currentPage > 0) { //In between pages
+        showPageLeftArrow(true);
+        showPageRightArrow(true);
+      } else if(currentPage <= 0) { //This is the first page
+        showPageLeftArrow(false);
+        showPageRightArrow(true);
+      }  
+
+      document.getElementById(CONFIG.CURRENT_PAGE).innerHTML = 
+        (totalPage == 0) ? currentPage : currentPage + 1;
+      document.getElementById(CONFIG.TOTAL_PAGE).innerHTML = totalPage;
+
+      function showPageLeftArrow(show) {
+        getPageLeftArrow().setAttribute('class', 
+          (show ? CONFIG.ACTIVE : CONFIG.INACTIVE));
       };
-    return mState;
-  }
+
+      function showPageRightArrow(show) {
+        getPageRightArrow().setAttribute('class', 
+          (show ? CONFIG.ACTIVE : CONFIG.INACTIVE));
+      };
+    };
+
+    function updateListItem(listItem) {
+      var ul = document.getElementById(CONFIG.SEARCH_ITEMS);
+      while(ul.firstChild) { //clear out the list on the page
+        ul.removeChild(ul.firstChild);
+      }
+      ul.appendChild(listItem);
+    };
+    
+    return {
+      getPageLeftArrow: getPageLeftArrow,
+      getPageRightArrow: getPageRightArrow,
+      getSearchBtn: getSearchBtn,
+      getSearchQuery: getSearchQuery,
+      getSearchQueryInput: getSearchQueryInput,
+      setSearchQueryInput: setSearchQueryInput,
+      setTotalItemField: setTotalItemField,
+      updateListItem: updateListItem,
+      updatePaging: updatePaging
+    };
   };
-})();
 
-var parseSearchQueryString = function(link, totalItems) {
-  var qString = link.split('&');
-  var offset = 0;
-  var offsetAvailable = false;
-  var parsedParams = { 
-  "q": "", 
-  "page": 0, 
-  "limit": 5, 
-  "totalPage": 0
+  var state = state || new State();
+  var uiModel = uiModel || new UiModel();
+
+  var parseSearchQueryString = function(link, totalItems) {
+    var qString = link.split('&');
+    var offset = 0;
+    var offsetAvailable = false;
+    var parsedParams = { 
+      "q": "", 
+      "page": 0, 
+      "limit": 5, 
+      "totalPage": 0
+    };
+    for(let i = 0, count = qString.length; i < count; i++) {
+      var params = qString[i].split('=');
+      if(params[0] == 'q') {
+        parsedParams.q = params[1];
+      } else if(params[0] == 'limit') {
+        parsedParams.limit = params[1];
+      } else if(params[0] == 'offset') {
+        offset = params[1];
+        offsetAvailable = true;
+      } else if(params[0] == 'page') {
+        parsedParams.page = params[1];
+      }
+    }
+    if(offsetAvailable == true) { //page is not in the querystring
+      parsedParams.page = offset / parsedParams.limit;
+    }
+    parsedParams.totalPage = Math.ceil(totalItems / parsedParams.limit);
+    
+    return parsedParams;  
   };
-  for(let i = 0, count = qString.length; i < count; i++) {
-    var params = qString[i].split('=');
-    if(params[0] == 'q') {
-      parsedParams.q = params[1];
-    } else if(params[0] == 'limit') {
-      parsedParams.limit = params[1];
-    } else if(params[0] == 'offset') {
-      offset = params[1];
-      offsetAvailable = true;
-    } else if(params[0] == 'page') {
-      parsedParams.page = params[1];
-    }
-  }
-  if(offsetAvailable == true) { //page is not in the querystring
-    parsedParams.page = offset / parsedParams.limit;
-  }
-  parsedParams.totalPage = Math.ceil(totalItems / parsedParams.limit);
-  
-  return parsedParams;  
-};
 
-function search(q, page, limit) {
-  //Update the browser history with the querystring. Useful for URL bookmarking
-  if (history.pushState) {
-      var urlWithQuery = window.location.protocol + "//" + window.location.host + 
-        window.location.pathname + '?q=' + q + '&page=' + page + '&limit=' + limit;
-      window.history.pushState({ path: urlWithQuery }, 'Twitch Search Stream' , urlWithQuery);
-  }
-  makeSearchRequest(q, page, limit);
-};
-
-function makeSearchRequest(q, page, limit) {
-  var queryString = '?';
-  makeSearchAPICall(buildSearchQueryString(q, page, limit));  
-
-  function buildSearchQueryString(q, page, limit) {
-    if(q != '') { //add the search term
-      queryString += 'q=' + q;
+  function search(q, page, limit) {
+    //Update the browser history with the querystring. Useful for URL bookmarking
+    if (history.pushState) {
+        var urlWithQuery = window.location.protocol + "//" + window.location.host + 
+          window.location.pathname + '?q=' + q + '&page=' + page + '&limit=' + limit;
+        window.history.pushState({ path: urlWithQuery }, 'Twitch Search Stream' , urlWithQuery);
     }
-    if(page > 0) { //add the offset. Twitch API starts with 0 then increments by limit
-      queryString += '&offset=' + (page * limit);
-    }
-    if(limit >= 100) { //add the number of items returned per page. Max is 100
-      queryString += '&limit=100';
-    } else if(limit >= 1) {
-      queryString += '&limit=' + limit;
-    }
+    makeSearchRequest(q, page, limit);
   };
-  
-  function makeSearchAPICall() {
-    var scriptTag = document.createElement('script');
-    scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString + '&callback=app.searchCallback';
-    document.body.appendChild(scriptTag);    
-  };
-};
 
-function getState() {
-  return state.get();
-};
+  function makeSearchRequest(q, page, limit) {
+    var queryString = '?';
+    makeSearchAPICall(buildSearchQueryString(q, page, limit));  
+
+    function buildSearchQueryString(q, page, limit) {
+      if(q != '') { //add the search term
+        queryString += 'q=' + q;
+      }
+      if(page > 0) { //add the offset. Twitch API starts with 0 then increments by limit
+        queryString += '&offset=' + (page * limit);
+      }
+      if(limit >= 100) { //add the number of items returned per page. Max is 100
+        queryString += '&limit=100';
+      } else if(limit >= 1) {
+        queryString += '&limit=' + limit;
+      }
+    };
+    
+    function makeSearchAPICall() {
+      var scriptTag = document.createElement('script');
+      scriptTag.src = CONFIG.TWITCH_API_SEARCH_STREAM_URL + 
+        queryString + '&callback=app.searchCallback';
+      document.body.appendChild(scriptTag);    
+    };
+  };
+
+  function getState() {
+    return state.get();
+  };
 
   function updateState(params) {
     return state.update(params.q, params.page, params.limit, params.totalPage);
@@ -120,50 +218,19 @@ function getState() {
     liTag.appendChild(h3Tag);
 
     var subtitleSpanTag = document.createElement('span');
-    subtitleSpanTag.setAttribute('class', 'item-subtitle');
+    subtitleSpanTag.setAttribute('class', CONFIG.ITEM_SUBTITLE);
     subtitleSpanTag.innerHTML = gameName + ' - ' + viewers + ' viewers';
     liTag.appendChild(subtitleSpanTag);
 
     var statusSpanTag = document.createElement('span');
-    statusSpanTag.setAttribute('class', 'item-status');
+    statusSpanTag.setAttribute('class', CONFIG.ITEM_STATUS);
     statusSpanTag.innerHTML = status;
     liTag.appendChild(statusSpanTag);
 
     return liTag;
   };
-
-  function updatePaging(currentPage, totalPage) {
-    if(totalPage <= 1) { //There's only 1 page or no search result
-      showPageLeftArrow(false);
-      showPageRightArrow(false);
-    } else if (currentPage >= totalPage - 1) { //This is the last page
-      showPageLeftArrow(true);
-      showPageRightArrow(false);
-    } else if(currentPage > 0) { //In between pages
-      showPageLeftArrow(true);
-      showPageRightArrow(true);
-    } else if(currentPage <= 0) { //This is the first page
-      showPageLeftArrow(false);
-      showPageRightArrow(true);
-    }  
-
-    document.getElementById('currentPage').innerHTML = 
-      totalPage == 0 ? currentPage : currentPage + 1;
-    document.getElementById('totalPage').innerHTML = totalPage;
-
-    function showPageLeftArrow(show) {
-      document.getElementById('pageLeftArrow').setAttribute('class', 
-        (show ? 'active' : 'inactive'));
-    };
-
-    function showPageRightArrow(show) {
-      document.getElementById('pageRightArrow').setAttribute('class', 
-        (show ? 'active' : 'inactive'));
-    };
-  };
   
-return {
-  init: function() {
+  function init() {
     //After the page is reload, check if there's querystring in the URL
     if(window.location.search) {
       refresh();
@@ -176,18 +243,18 @@ return {
 
     function refresh() {  
       var currentState = parseSearchQueryString(window.location.search.slice(1), 0);
-        document.getElementById('searchQuery').value = decodeURI(currentState.q);
+      uiModel.setSearchQueryInput(decodeURI(currentState.q));
       makeSearchRequest(currentState.q, currentState.page, currentState.limit);
     };
 
     //Invoke the searchBtn click event when the "Enter" key is pressed
-    document.getElementById('searchQuery').onkeypress = function(event) {
+    uiModel.getSearchQuery().onkeypress = function(event) {
       if(event.keyCode == 13) { //The "Enter" key
-        document.getElementById('searchBtn').click();
+        uiModel.getSearchBtn().click();
       }
     };
-    document.getElementById('searchBtn').onclick = function() {
-      var q = document.getElementById('searchQuery').value;
+    uiModel.getSearchBtn().onclick = function() {
+      var q = uiModel.getSearchQueryInput();
       //Remove the whole script tag in the search query
       q = q.replace(/<script.*?>.*?<\/script>/ig, '');
       if(q == '') {
@@ -198,54 +265,53 @@ return {
       }
     }; 
 
-    document.getElementById('pageLeftArrow').onclick = function() {
+    uiModel.getPageLeftArrow().onclick = function() {
       var currentState = getState();
       search(currentState.q, currentState.page - 1, currentState.limit);
     };
 
-    document.getElementById('pageRightArrow').onclick = function() {  
+    uiModel.getPageRightArrow().onclick = function() {  
       var currentState = getState();
       search(currentState.q, currentState.page + 1, currentState.limit);
     };
-  },
+  };
+  
+return {
+  init: init,
   searchCallback: function (json) {
-  try {
-    if(json && typeof json === "object" && json !== null) {    
-      if(json.hasOwnProperty('status')) { //only failed calls have the status key
-        alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
-      } else {
-        document.getElementById('totalItems').innerHTML = json._total;
+    try {
+      if(json && typeof json === "object" && json !== null) {    
+        if(json.hasOwnProperty('status')) { //only failed calls have the status key
+          alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
+        } else {
+          uiModel.setTotalItemField(json._total);
 
-        var currentLink = json._links.self;
-        var currentState = parseSearchQueryString(currentLink, json._total); //This only updates when the response is returned
-    updateState(currentState);
-        updatePaging(currentState.page, currentState.totalPage);
+          var currentLink = json._links.self;
+          //This only updates when the response is returned
+          var currentState = parseSearchQueryString(currentLink, json._total); 
+          updateState(currentState);
+          uiModel.updatePaging(currentState.page, currentState.totalPage);
 
-        var streams = json.streams;
-        var listItem = document.createDocumentFragment();
+          var streams = json.streams;
+          var listItem = document.createDocumentFragment();
 
-        for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
-          var previewImage = streams[i].preview.template;
-          previewImage = previewImage.replace('{width}', '100');
-          previewImage = previewImage.replace('{height}', '100');
+          for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
+            var previewImage = streams[i].preview.template;
+            previewImage = previewImage.replace('{width}', '100');
+            previewImage = previewImage.replace('{height}', '100');
 
-          var item = createItem(previewImage, streams[i].channel.display_name,
-            streams[i].game, streams[i].viewers, streams[i].channel.status)
-          listItem.appendChild(item);
+            var item = createItem(previewImage, streams[i].channel.display_name,
+              streams[i].game, streams[i].viewers, streams[i].channel.status)
+            listItem.appendChild(item);
+          }
+          uiModel.updateListItem(listItem);
         }
-
-        var ul = document.getElementById('searchItems');
-        while(ul.firstChild) { //clear out the list on the page
-          ul.removeChild(ul.firstChild);
-        }
-        document.getElementById('searchItems').appendChild(listItem);       
       }
+    } catch (ex) {
+      alert("Invalid JSON data");
+      console.log(ex);
     }
-  } catch (ex) {
-    alert("Invalid JSON data");
-  console.log(ex);
   }
-}
 };
 })();
 app.init();
