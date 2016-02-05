@@ -140,7 +140,7 @@ var app = (function(state, uiModel) {
       "limit": 5, 
       "totalPage": 0
     };
-    for(let i = 0, count = qString.length; i < count; i++) {
+    for(var i = 0, count = qString.length; i < count; i++) {
       var params = qString[i].split('=');
       if(params[0] == 'q') {
         parsedParams.q = params[1];
@@ -294,7 +294,7 @@ var app = (function(state, uiModel) {
             var streams = json.streams;
             var listItem = document.createDocumentFragment();
 
-            for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
+            for(var i = 0, numStreams = streams.length; i < numStreams; i++) {
               var previewImage = streams[i].preview.template;
               previewImage = previewImage.replace('{width}', '100');
               previewImage = previewImage.replace('{height}', '100');
