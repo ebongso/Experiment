@@ -21,6 +21,7 @@ A simple web app that calls the TWITCH.TV Search Stream endpoint.
 1. Count the streams returned and make another request if they are fewer.
 2. Better error handling on the UI.
 3. Add Twitter Bootstrap to enhance the UI. 
+4. Make a grid view display.
 
 This app is hosted at [http://ebongso.github.io].
 
