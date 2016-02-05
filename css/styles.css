@@ -8,6 +8,11 @@ section {
   padding: 0px 10px 0 10px;
 }
 
+.items a {
+  text-decoration: none;
+  color: #4D4DFF;
+}
+
 .items p .right {
   float: right;
 }

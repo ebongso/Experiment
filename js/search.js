@@ -151,15 +151,20 @@ var app = (function(state, uiModel) {
     var aTag = document.createElement('a');
     aTag.setAttribute('target', '_blank');
     aTag.setAttribute('href', channelUrl);
-    aTag.setAttribute('title', 'Click to watch now: ' + channelUrl);
+    aTag.setAttribute('title', 'Watch now: ' + channelUrl);
     var imgTag = document.createElement('img');
     imgTag.src = previewImage;
     aTag.appendChild(imgTag);
     liTag.appendChild(aTag);
 
+    var streamTag = document.createElement('a');
+    streamTag.setAttribute('target', '_blank');
+    streamTag.setAttribute('href', channelUrl);
+    streamTag.setAttribute('title', 'Watch now: ' + channelUrl);
     var h3Tag = document.createElement('h3');
     h3Tag.innerHTML = displayName;
-    liTag.appendChild(h3Tag);
+    streamTag.appendChild(h3Tag);
+    liTag.appendChild(streamTag);
 
     var subtitleSpanTag = document.createElement('span');
     subtitleSpanTag.setAttribute('class', CONFIG.ITEM_SUBTITLE);

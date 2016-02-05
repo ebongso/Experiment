@@ -10,7 +10,7 @@ This app is hosted at [http://ebongso.github.io].
 4. Move to the previous page using the left-arrow.
 5. If coming back to the app using a bookmarked URL, the app does a search using the querystring in the URL.
 6. If navigating using the browser's back/forward button, the app does a search using the querystring in the URL.
-7. Clicking each preview image opens up the stream in a new tab.
+7. Clicking each preview image or stream name opens up the stream in a new tab.
 8. Display the search results using a list view
 9. The page number resets to 1 when a new query is searched or the "Items per page" is changed.
 10. Do not allow search with no query or query with script tag.
