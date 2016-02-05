@@ -1,165 +1,69 @@
 "use strict"
 
+//The main app
 var app = (function(state, uiModel) {
-  const CONFIG = {
-    "ACTIVE": 'active',
-    "CLIENT_ID": "1kk5ulauc6uq5lv5n1c97zcwl4qw4dm",
-    "CURRENT_PAGE": 'currentPage',
-    "INACTIVE": 'inactive',
-    "ITEM_STATUS": 'itemStatus',
-    "ITEM_SUBTITLE": 'itemSubtitle',
-    "LIMIT": 'limit',
-    "LOADING_MASK": 'loadingMask',
-    "PAGE_LEFT_ARROW": 'pageLeftArrow',
-    "PAGE_RIGHT_ARROW": 'pageRightArrow',
-    "SEARCH_BTN": 'searchBtn',
-    "SEARCH_ITEMS": 'searchItems',
-    "SEARCH_QUERY": 'searchQuery',
-    "TOTAL_ITEMS": 'totalItems',
-    "TOTAL_PAGE": 'totalPage',
-    "TWITCH_API_SEARCH_STREAM_URL": 'https://api.twitch.tv/kraken/search/streams'
-  };
-
-  var State = function () {
-    var mState;
-    function init() {  
-      return {
-      "q": "", 
-      "page": 0, 
-      "limit": 25, 
-      "totalPage": 0
-      };
-    };
-    
-    return {
-      get: function() {
-        if(!mState) {
-          mState = init();
-        }
-      return mState;
-      },
-      update: function(q, page, limit, totalPage) {
-        mState = {
-          "q": q, 
-          "page": page, 
-          "limit": limit, 
-          "totalPage": totalPage
-          };
-        return mState;
-      }
-    };
-  };
-
-  var UiModel = function() {
-    function getItemsPerPage() {
-      return document.getElementById(CONFIG.LIMIT);
-    };
-
-    function getItemsPerPageSelection() {
-      return getItemsPerPage().value;
-    };
-
-    function getPageLeftArrow() {
-      return document.getElementById(CONFIG.PAGE_LEFT_ARROW);
-    };
-
-    function getPageRightArrow() {
-      return document.getElementById(CONFIG.PAGE_RIGHT_ARROW);
-    };
-
-    function getSearchBtn() {
-      return document.getElementById(CONFIG.SEARCH_BTN);
-    };
-
-    function getSearchQuery() {
-      return document.getElementById(CONFIG.SEARCH_QUERY);
-    };
-
-    function getSearchQueryInput() {
-      return getSearchQuery().value;
-    };
-
-    function setItemsPerPage(value) {
-      var itemsPerPageDdl = getItemsPerPage();
-      var itemsPerPageLength = itemsPerPageDdl.options.length;
-      for (var i = 0; i < itemsPerPageLength; i++) {
-        if (itemsPerPageDdl.options[i].text === value) {
-          itemsPerPageDdl.selectedIndex = i;
-          break;
-        }
-      }
-    };
-    
-    function setSearchQueryInput(value) {
-      getSearchQuery().value = value;
-    };
-
-    function setTotalItemField(value) {
-      document.getElementById(CONFIG.TOTAL_ITEMS).innerHTML = value;
-    };
-
-    function showLoadingMask(show) {
-        document.getElementById(CONFIG.LOADING_MASK).setAttribute('class', 
-          (show ? CONFIG.LOADING_MASK : CONFIG.INACTIVE));
-      };
-
-    function updateListItem(listItem) {
-      var ul = document.getElementById(CONFIG.SEARCH_ITEMS);
-      while(ul.firstChild) { //clear out the list on the page
-        ul.removeChild(ul.firstChild);
-      }
-      ul.appendChild(listItem);
-    };
-
-    function updatePaging(currentPage, totalPage) {
-      if(totalPage <= 1) { //There's only 1 page or no search result
-        showPageLeftArrow(false);
-        showPageRightArrow(false);
-      } else if (currentPage >= totalPage - 1) { //This is the last page
-        showPageLeftArrow(true);
-        showPageRightArrow(false);
-      } else if(currentPage > 0) { //In between pages
-        showPageLeftArrow(true);
-        showPageRightArrow(true);
-      } else if(currentPage <= 0) { //This is the first page
-        showPageLeftArrow(false);
-        showPageRightArrow(true);
-      }  
-
-      document.getElementById(CONFIG.CURRENT_PAGE).innerHTML = 
-        (totalPage == 0) ? currentPage : currentPage + 1;
-      document.getElementById(CONFIG.TOTAL_PAGE).innerHTML = totalPage;
-
-      function showPageLeftArrow(show) {
-        getPageLeftArrow().setAttribute('class', 
-          (show ? CONFIG.ACTIVE : CONFIG.INACTIVE));
-      };
-
-      function showPageRightArrow(show) {
-        getPageRightArrow().setAttribute('class', 
-          (show ? CONFIG.ACTIVE : CONFIG.INACTIVE));
-      };
-    };
-    
-    return {
-      getItemsPerPage: getItemsPerPage,
-      getItemsPerPageSelection: getItemsPerPageSelection,
-      getPageLeftArrow: getPageLeftArrow,
-      getPageRightArrow: getPageRightArrow,
-      getSearchBtn: getSearchBtn,
-      getSearchQuery: getSearchQuery,
-      getSearchQueryInput: getSearchQueryInput,
-      setItemsPerPage: setItemsPerPage,
-      setSearchQueryInput: setSearchQueryInput,
-      setTotalItemField: setTotalItemField,
-      showLoadingMask: showLoadingMask,
-      updateListItem: updateListItem,
-      updatePaging: updatePaging
-    };
-  };
-
   var state = state || new State();
   var uiModel = uiModel || new UiModel();
+  
+  function init() {
+    //After the page is reload, check if there's querystring in the URL
+    if(window.location.search) {
+      refresh();
+    };
+
+    //Reload the page when the back/forward button is pressed
+    window.onpopstate = function(event) {
+      refresh();
+    };
+
+    function refresh() {  
+      var currentState = parseSearchQueryString(window.location.search.slice(1), 0);
+      uiModel.setSearchQueryInput((decodeURI(currentState.q)).replace(/\+/g, ' '));
+      makeSearchRequest(currentState.q, currentState.page, currentState.limit);
+    };
+
+    uiModel.getItemsPerPage().onchange = function(event) {
+      var q = uiModel.getSearchQueryInput();
+      if(q == '') {
+        alert("The search query was not supplied. Please try again.");
+        return;
+      }
+      var currentState = getState();
+      var selectedValue = parseInt(uiModel.getItemsPerPageSelection());
+
+      if(currentState.limit != selectedValue) {
+        search(currentState.q, 0, selectedValue); //reset to page 1
+      }
+    };
+
+    //Invoke the searchBtn click event when the "Enter" key is pressed
+    uiModel.getSearchQuery().onkeypress = function(event) {
+      if(event.keyCode == 13) { //The "Enter" key
+        uiModel.getSearchBtn().click();
+      }
+    };
+    uiModel.getSearchBtn().onclick = function() {
+      var q = uiModel.getSearchQueryInput();
+      //Remove the whole script tag in the search query
+      q = q.replace(/<script.*?>.*?<\/script>/ig, '');
+      if(q == '') {
+        alert("This is not a valid search query. Please try again.");
+      } else {
+        var currentState = getState();
+        search(q, 0, currentState.limit); //reset to page 1
+      }
+    }; 
+
+    uiModel.getPageLeftArrow().onclick = function() {
+      var currentState = getState();
+      search(currentState.q, currentState.page - 1, currentState.limit);
+    };
+
+    uiModel.getPageRightArrow().onclick = function() {  
+      var currentState = getState();
+      search(currentState.q, currentState.page + 1, currentState.limit);
+    };
+  };
 
   var parseSearchQueryString = function(link, totalItems) {    
     var qString = link.substring(link.indexOf('?') + 1).split('&');
@@ -270,66 +174,23 @@ var app = (function(state, uiModel) {
     return liTag;
   };
   
-  function init() {
-    //After the page is reload, check if there's querystring in the URL
-    if(window.location.search) {
-      refresh();
-    };
+  //Build out the list
+  function createListItem(streams) {
+    var listItem = document.createDocumentFragment();
+    //let was used instead of var, but Firefox version < 44 doesn't support it
+    for(var i = 0, numStreams = streams.length; i < numStreams; i++) {
+      var previewImage = streams[i].preview.template;
+      previewImage = previewImage.replace('{width}', '100');
+      previewImage = previewImage.replace('{height}', '100');
 
-    //Reload the page when the back/forward button is pressed
-    window.onpopstate = function(event) {
-      refresh();
-    };
-
-    function refresh() {  
-      var currentState = parseSearchQueryString(window.location.search.slice(1), 0);
-      uiModel.setSearchQueryInput((decodeURI(currentState.q)).replace(/\+/g, ' '));
-      makeSearchRequest(currentState.q, currentState.page, currentState.limit);
-    };
-
-    uiModel.getItemsPerPage().onchange = function(event) {
-      var q = uiModel.getSearchQueryInput();
-      if(q == '') {
-        alert("The search query was not supplied. Please try again.");
-        return;
-      }
-      var currentState = getState();
-      var selectedValue = parseInt(uiModel.getItemsPerPageSelection());
-
-      if(currentState.limit != selectedValue) {
-        search(currentState.q, 0, selectedValue); //reset to page 1
-      }
-    };
-
-    //Invoke the searchBtn click event when the "Enter" key is pressed
-    uiModel.getSearchQuery().onkeypress = function(event) {
-      if(event.keyCode == 13) { //The "Enter" key
-        uiModel.getSearchBtn().click();
-      }
-    };
-    uiModel.getSearchBtn().onclick = function() {
-      var q = uiModel.getSearchQueryInput();
-      //Remove the whole script tag in the search query
-      q = q.replace(/<script.*?>.*?<\/script>/ig, '');
-      if(q == '') {
-        alert("This is not a valid search query. Please try again.");
-      } else {
-        var currentState = getState();
-        search(q, 0, currentState.limit); //reset to page 1
-      }
-    }; 
-
-    uiModel.getPageLeftArrow().onclick = function() {
-      var currentState = getState();
-      search(currentState.q, currentState.page - 1, currentState.limit);
-    };
-
-    uiModel.getPageRightArrow().onclick = function() {  
-      var currentState = getState();
-      search(currentState.q, currentState.page + 1, currentState.limit);
-    };
+      var item = createItem(previewImage, streams[i].channel.display_name,
+        streams[i].game, streams[i].viewers, streams[i].channel.status, 
+        streams[i].channel.url);
+      listItem.appendChild(item);
+    }
+    return listItem;
   };
-  
+
   return {
     init: init,
     searchCallback: function (json) {
@@ -347,20 +208,7 @@ var app = (function(state, uiModel) {
             uiModel.updatePaging(currentState.page, currentState.totalPage);
             uiModel.setItemsPerPage(String(currentState.limit));
 
-            //Build out the list
-            var streams = json.streams;
-            var listItem = document.createDocumentFragment();
-            //let was used instead of var, but Firefox version < 44 doesn't support it
-            for(var i = 0, numStreams = streams.length; i < numStreams; i++) {
-              var previewImage = streams[i].preview.template;
-              previewImage = previewImage.replace('{width}', '100');
-              previewImage = previewImage.replace('{height}', '100');
-
-              var item = createItem(previewImage, streams[i].channel.display_name,
-                streams[i].game, streams[i].viewers, streams[i].channel.status, 
-                streams[i].channel.url);
-              listItem.appendChild(item);
-            }
+            var listItem = createListItem(json.streams);
             uiModel.updateListItem(listItem);
 
             setTimeout(function(){
