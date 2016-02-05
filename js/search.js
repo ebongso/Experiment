@@ -1,6 +1,35 @@
 "use strict"
 const TWITCHAPISEARCHSTREAMURL = 'https://api.twitch.tv/kraken/search/streams';
-var currentState = { "q": "", "page": 0, "limit": 5, "totalPage": 0 }
+
+var state = (function () {
+  var mState;
+  function init() {  
+    return {
+    "q": "", 
+    "page": 0, 
+    "limit": 5, 
+    "totalPage": 0
+    };
+  };
+  
+  return {
+    get: function() {
+      if(!mState) {
+      mState = init();
+    }
+    return mState;
+  },
+  update: function(q, page, limit, totalPage) {
+    mState = {
+      "q": q, 
+      "page": page, 
+      "limit": limit, 
+      "totalPage": totalPage
+      };
+    return mState;
+  }
+  };
+})();
 
 //After the page is reload, check if there's querystring in the URL
 if(window.location.search) {
@@ -13,7 +42,7 @@ window.onpopstate = function(event) {
 };
 
 function refresh() {  
-  updateState(window.location.search.slice(1), 0);
+  var currentState = parseSearchQueryString(window.location.search.slice(1), 0);
   document.getElementById('searchQuery').value = decodeURI(currentState.q);
   makeSearchRequest(currentState.q, currentState.page, currentState.limit);
 };
@@ -31,48 +60,54 @@ document.getElementById('searchBtn').onclick = function() {
   if(q == '') {
     alert("This is not a valid query. Please try again.");
   } else {
-    currentState.page = 0; //reset to page 1
-    search(q, currentState.page, currentState.limit);
+    var currentState = state.get();
+    search(q, 0, currentState.limit); //reset to page 1 due to new search query
   }
 };
 
 document.getElementById('pageLeftArrow').onclick = function() {
-  var q = currentState.q;
-  var page = currentState.page - 1;
-  search(q, page, currentState.limit);
+  var currentState = state.get();
+  search(currentState.q, currentState.page - 1, currentState.limit);
 };
 
-document.getElementById('pageRightArrow').onclick = function() {
-  var q = currentState.q;
-  var page = currentState.page + 1;
-  search(q, page, currentState.limit);
+document.getElementById('pageRightArrow').onclick = function() {  
+  var currentState = state.get();
+  search(currentState.q, currentState.page + 1, currentState.limit);
 };
 
-function updateState(link, totalItems) {
+function parseSearchQueryString(link, totalItems) {
   var qString = link.split('&');
   var offset = 0;
   var offsetAvailable = false;
+  var parsedParams = { 
+  "q": "", 
+  "page": 0, 
+  "limit": 5, 
+  "totalPage": 0
+  };
   for(let i = 0, count = qString.length; i < count; i++) {
     var params = qString[i].split('=');
     if(params[0] == 'q') {
-      currentState.q = params[1];
+      parsedParams.q = params[1];
     } else if(params[0] == 'limit') {
-      currentState.limit = params[1];
+      parsedParams.limit = params[1];
     } else if(params[0] == 'offset') {
       offset = params[1];
       offsetAvailable = true;
     } else if(params[0] == 'page') {
-      currentState.page = params[1];
+      parsedParams.page = params[1];
     }
   }
-    if(offsetAvailable == true) {
-    currentState.page = offset / currentState.limit;
+  if(offsetAvailable == true) { //page is not in the querystring
+    parsedParams.page = offset / parsedParams.limit;
   }
-  currentState.totalPage = Math.ceil(totalItems / currentState.limit);
+  parsedParams.totalPage = Math.ceil(totalItems / parsedParams.limit);
+  
+  return parsedParams;  
 };
 
 function search(q, page, limit) {
-  //Update the browser history with the querystring. Useful for copying and pasting URLs.
+  //Update the browser history with the querystring. Useful for URL bookmarking
   if (history.pushState) {
       var urlWithQuery = window.location.protocol + "//" + window.location.host + 
         window.location.pathname + '?q=' + q + '&page=' + page + '&limit=' + limit;
@@ -82,13 +117,10 @@ function search(q, page, limit) {
 };
 
 function makeSearchRequest(q, page, limit) {
-  var queryString = buildSearchQueryString(q, page, limit);
-  var scriptTag = document.createElement('script');
-  scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString + '&callback=searchCallback';
-  document.body.appendChild(scriptTag);
+  var queryString = '?';
+  makeSearchAPICall(buildSearchQueryString(q, page, limit));  
 
   function buildSearchQueryString(q, page, limit) {
-    var queryString = '?';
     if(q != '') { //add the search term
       queryString += 'q=' + q;
     }
@@ -100,53 +132,55 @@ function makeSearchRequest(q, page, limit) {
     } else if(limit >= 1) {
       queryString += '&limit=' + limit;
     }
-    return queryString;
+  };
+  
+  function makeSearchAPICall() {
+    var scriptTag = document.createElement('script');
+    scriptTag.src = TWITCHAPISEARCHSTREAMURL + queryString + '&callback=searchCallback';
+    document.body.appendChild(scriptTag);    
   };
 };
 
-function searchCallback(response) {
-  if(response) {
-    try {
-      var stringJson = JSON.stringify(response);
-    } catch(ex) {
-      alert('JSON Stringify Error: ' + ex);
-    }
+function searchCallback(json) {
+  try {
+    if(json && typeof json === "object" && json !== null) {    
+      if(json.hasOwnProperty('status')) { //only failed calls have the status key
+        alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
+      } else {
+        document.getElementById('totalItems').innerHTML = json._total;
 
-    try {
-      var json = JSON.parse(stringJson);
-    } catch(ex) {
-      alert('JSON Parse Error: ' + ex);
-    }
+        var currentLink = json._links.self;
+        var currentState = parseSearchQueryString(currentLink, json._total); //This only updates when the response is returned
+    updateState(currentState);
+        updatePaging(currentState.page, currentState.totalPage);
 
-    if(json.hasOwnProperty('status')) { //only failed calls have the status key
-      alert('Error: ' + json.status + ' ' + json.error + ' - ' + json.message);
-    } else {
-      document.getElementById('totalItems').innerHTML = json._total;
+        var streams = json.streams;
+        var listItem = document.createDocumentFragment();
 
-      var currentLink = json._links.self;
-      updateState(currentLink, json._total);
-      updatePaging(currentState.page, currentState.totalPage);
+        for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
+          var previewImage = streams[i].preview.template;
+          previewImage = previewImage.replace('{width}', '100');
+          previewImage = previewImage.replace('{height}', '100');
 
-      var streams = json.streams;
-      var listItem = document.createDocumentFragment();
+          var item = createItem(previewImage, streams[i].channel.display_name,
+            streams[i].game, streams[i].viewers, streams[i].channel.status)
+          listItem.appendChild(item);
+        }
 
-      for(let i = 0, numStreams = streams.length; i < numStreams; i++) {
-        var previewImage = streams[i].preview.template;
-        previewImage = previewImage.replace('{width}', '100');
-        previewImage = previewImage.replace('{height}', '100');
-
-        var item = createItem(previewImage, streams[i].channel.display_name,
-          streams[i].game, streams[i].viewers, streams[i].channel.status)
-        listItem.appendChild(item);
+        var ul = document.getElementById('searchItems');
+        while(ul.firstChild) { //clear out the list on the page
+          ul.removeChild(ul.firstChild);
+        }
+        document.getElementById('searchItems').appendChild(listItem);
       }
-
-      var ul = document.getElementById('searchItems');
-      while(ul.firstChild) { //clear out the list on the page
-        ul.removeChild(ul.firstChild);
-      }
-      document.getElementById('searchItems').appendChild(listItem);
     }
+  } catch (ex) {
+    alert("Invalid JSON data");
   }
+
+  function updateState(params) {
+    return state.update(params.q, params.page, params.limit, params.totalPage);
+  };
 
   function createItem(previewImage, displayName, gameName, viewers, status) {
     var liTag = document.createElement('li');
