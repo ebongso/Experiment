@@ -1,7 +1,5 @@
 A simple web app that calls the TWITCH.TV Search Stream endpoint.
 
-This app is hosted at [http://ebongso.github.io].
-
 #### Features:
 
 1. Search for a stream on TWITCH.TV using the "Search" button or "Enter" key on the keyboard.
@@ -28,29 +26,5 @@ This app is hosted at [http://ebongso.github.io].
 3. Add Twitter Bootstrap to enhance the UI. 
 4. Make a grid view display.
 
-#### Screenshots:
-
-##### First time visiting the site:
-![First Time](http://ebongso.github.io/images/app-screenshots/FirstTime.png)
-
-##### No search query:
-![No Search Query](http://ebongso.github.io/images/app-screenshots/NoSearchQuery.png)
-
-##### Query with script tag:
-![Query with script tag](http://ebongso.github.io/images/app-screenshots/ScriptTag.png)
-
-##### Search starcraft:
-![Search Starcraft](http://ebongso.github.io/images/app-screenshots/SearchStarcraft.png)
-
-##### Switch Items Per Page:
-![Switch Items Per Page](http://ebongso.github.io/images/app-screenshots/SwitchItemsPerPage.png)
-
-##### Go to a page by clicking the arrows:
-![Go to a page](http://ebongso.github.io/images/app-screenshots/NextPage.png)
-
-##### Show loading icon:
-![Loading Mask](http://ebongso.github.io/images/app-screenshots/LoadingMask.png)
-
-[http://ebongso.github.io]:http://ebongso.github.io
 [https://github.com/justintv/Twitch-API/issues/495]:https://github.com/justintv/Twitch-API/issues/495
 [https://discuss.dev.twitch.tv/t/is-the-search-streams-part-of-the-api-broken/2385]:https://discuss.dev.twitch.tv/t/is-the-search-streams-part-of-the-api-broken/2385
