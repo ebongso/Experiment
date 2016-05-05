@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Twitch Search Stream</title>
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+  </head>
+<body>
+  <section>
+    <h1>Twitch Search Stream</h1>
+  </section>
+  <section>
+    <article class="search">
+      <input id="searchQuery" type="text" placeholder="Search query..." required />
+      <input id="searchBtn" type="submit" value="Search" />
+    </article>
+    <article class="numItemsPerPage">
+      <p>
+        Items per page: 
+        <select id="limit">
+          <option value="10">10</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+          <option value="75">75</option>
+          <option value="100">100</option>
+        </select>
+      </p>
+    </article>
+  </section>
+  <section>
+    <article id="loadingMask" class="inactive"></article>
+    <article id="items" class="items">
+      <p>
+        <span>Total Results: </span>
+        <span id="totalItems"></span>
+
+        <span class="right">
+          <span id="pageLeftArrow" class="inactive">&larr;</span>
+          <span id="currentPage"></span>&nbsp;/&nbsp;<span id="totalPage"></span>
+          <span id="pageRightArrow" class="inactive">&rarr;</span>
+        </span>
+      </p>
+      <ul id="searchItems">
+      </ul>
+    </article>
+  </section>
+
+  <script type="text/javascript" src="js/config.js"></script>
+  <script type="text/javascript" src="js/state.js"></script>
+  <script type="text/javascript" src="js/uimodel.js"></script>
+  <script type="text/javascript" src="js/search.js"></script>
+</body>
+</html>
